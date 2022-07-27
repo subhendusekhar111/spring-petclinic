@@ -21,16 +21,13 @@ pipeline {
         
         stage('Cloning Git') {
             steps {
-                checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: '', url: 'https://github.com/subhendusekhar111/spring-petclinic.git']]])     
-            }
+            checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/subhendusekhar111/spring-petclinic.git']]])            }
         }
   
     // Building Docker images
     stage('Building image') {
       steps{
-        script {
-          dockerImage = docker.build "${IMAGE_REPO_NAME}:${IMAGE_TAG}"
-        }
+        sh 'docker build -t ${IMAGE_REPO_NAME}:${IMAGE_TAG} .'
       }
     }
    
@@ -42,6 +39,12 @@ pipeline {
                 sh "docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}:${IMAGE_TAG}"
          }
         }
-      }
     }
+    stage('Deploy on k8s') {
+        steps {
+            sh 'kubectl apply -f spc-k8s.yml'
+        }
+    }
+    
+}
 }
